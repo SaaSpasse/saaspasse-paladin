@@ -46,98 +46,64 @@ export const handler: Handler = async (event) => {
       --no ${NEGATIVE_PROMPT}
     `.trim();
 
-    // Try Gemini 2.0 Flash experimental (image generation)
+    // Stratégie de Fallback : Essayer Pro, si échec, essayer Flash
     const models = [
-      "gemini-2.0-flash-exp-image-generation",
-      "imagen-3.0-generate-002"
+      { name: "gemini-2.0-flash-exp", label: "Gemini 2.0 Flash (Haute Qualité)" },
+      { name: "gemini-2.0-flash-exp-image-generation", label: "Gemini 2.0 Flash Image" },
     ];
 
     let lastError = null;
 
     for (const model of models) {
       try {
-        console.log(`Trying model: ${model}`);
+        console.log(`Trying model: ${model.name}`);
 
-        let response;
-        let data;
-
-        if (model.startsWith("imagen")) {
-          // Imagen API has different format
-          response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                instances: [{ prompt: fullPrompt }],
-                parameters: { sampleCount: 1 }
-              }),
-            }
-          );
-        } else {
-          // Gemini format
-          response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                contents: [{ parts: [{ text: fullPrompt }] }],
-                generationConfig: {
-                  responseModalities: ["image", "text"],
-                },
-              }),
-            }
-          );
-        }
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model.name}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: fullPrompt }] }],
+              generationConfig: {
+                responseModalities: ["image", "text"],
+              },
+            }),
+          }
+        );
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`Model ${model} failed:`, errorText);
+          console.error(`Model ${model.name} failed:`, errorText);
           lastError = errorText;
           continue;
         }
 
-        data = await response.json();
+        const data = await response.json();
 
         // Extract image from response
-        let imageData = null;
-        let mimeType = "image/png";
-
-        if (model.startsWith("imagen")) {
-          // Imagen response format
-          imageData = data.predictions?.[0]?.bytesBase64Encoded;
-        } else {
-          // Gemini response format
-          const parts = data.candidates?.[0]?.content?.parts || [];
-          for (const part of parts) {
-            if (part.inlineData) {
-              imageData = part.inlineData.data;
-              mimeType = part.inlineData.mimeType || mimeType;
-              break;
-            }
+        const parts = data.candidates?.[0]?.content?.parts || [];
+        for (const part of parts) {
+          if (part.inlineData) {
+            return {
+              statusCode: 200,
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                imageUrl: `data:${part.inlineData.mimeType || "image/png"};base64,${part.inlineData.data}`,
+                modelUsed: model.label,
+              }),
+            };
           }
         }
-
-        if (imageData) {
-          return {
-            statusCode: 200,
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              imageUrl: `data:${mimeType};base64,${imageData}`,
-              modelUsed: model,
-            }),
-          };
-        }
       } catch (e: any) {
-        console.error(`Model ${model} error:`, e.message);
+        console.error(`Model ${model.name} error:`, e.message);
         lastError = e.message;
       }
     }
 
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: `All models failed. Last error: ${lastError}` }),
+      body: JSON.stringify({ error: `Tous les modèles ont échoué. Dernière erreur: ${lastError}` }),
     };
   } catch (error: any) {
     console.error("Function error:", error);
