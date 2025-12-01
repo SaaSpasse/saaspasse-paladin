@@ -1,9 +1,10 @@
 import type { Handler } from "@netlify/functions";
+import { REF_IMAGE } from "./ref-image";
 
 const SAASPALADIN_MASTER_PROMPT_FR = `
 Petit chevalier SaaSpaladin, 1 m 20.
-TÊTE : Casque couleur crème #F6F3EC sans visage, forme simple et lisse (type obus ou gélule). Sommet arrondi mais pas sphérique.
-YEUX : Deux fentes verticales noires #000000 (12×2 cm) parallèles. Pas d'autre ouverture.
+TÊTE : Casque TRAPU et COMPACT couleur crème #F6F3EC, forme gélule/œuf HORIZONTAL (plus large que haut), proportions presque carrées. Sommet ARRONDI EN DÔME, jamais pointu ni allongé verticalement. Le casque ressemble à un œuf couché sur le côté.
+YEUX : Deux fentes verticales noires #000000 parallèles, centrées sur le casque. Pas d'autre ouverture.
 CORPS : Cape violette usée #7E4874, armure patinée ivoire #D5D0C6 sur mailles sombres, gants et bottes cuir brun #6B4B30.
 STYLE : Illustration ligne claire franco-belge, hachures fines, style Moebius x Mike Mignola. Couleurs saturées mais terreuses, pas de dégradés numériques. Éclairage dramatique unique.
 `;
@@ -12,6 +13,8 @@ const NEGATIVE_PROMPT = `
 visière horizontale, T-shaped visor, Mandalorian,
 tête de boule, sphere head, ball head, bubble head,
 casque pointu, sharp angles, spiky helmet, square helmet,
+casque allongé, elongated helmet, tall helmet, vertical helmet, oblong helmet, stretched helmet,
+casque haut, narrow helmet, slim helmet, thin helmet,
 peau visible, skin visible, human chin, human nose, human neck, mouth,
 glossy 3D, cartoon kawaii, Pixar, vector art, smooth gradients, photo realistic, futuristic sci-fi, low poly, blur.
 `;
@@ -64,7 +67,13 @@ export const handler: Handler = async (event) => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: fullPrompt }] }],
+              contents: [{
+                parts: [
+                  { text: "Voici une image de référence du personnage SaaSpaladin. Génère une nouvelle image en respectant EXACTEMENT ce style de casque (trapu, compact, arrondi):" },
+                  { inlineData: { mimeType: "image/png", data: REF_IMAGE } },
+                  { text: fullPrompt }
+                ]
+              }],
               generationConfig: {
                 responseModalities: ["image", "text"],
               },
