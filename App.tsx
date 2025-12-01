@@ -20,14 +20,12 @@ const PasswordScreen: React.FC<{ onSubmit: (password: string) => void; error?: s
   return (
     <div className="flex flex-col items-center justify-center text-center space-y-8 py-12">
       <div className="max-w-md mx-auto space-y-6">
-        <div className="w-24 h-24 rounded-full border-4 border-paladin-dark bg-paladin-purple overflow-hidden shadow-[6px_6px_0px_0px_rgba(7,10,38,1)] mx-auto flex items-center justify-center">
-          <svg viewBox="0 0 100 100" className="w-full h-full">
-            <rect width="100" height="100" fill="#853DFF" />
-            <path d="M10 100 Q 50 70 90 100 L 90 100 L 10 100 Z" fill="#7E4874" />
-            <rect x="25" y="15" width="50" height="70" rx="25" fill="#ECEBF1" stroke="#070A26" strokeWidth="3" />
-            <rect x="38" y="35" width="8" height="25" rx="3" fill="#070A26" />
-            <rect x="54" y="35" width="8" height="25" rx="3" fill="#070A26" />
-          </svg>
+        <div className="mx-auto">
+          <img
+            src="/paladin-hero.png"
+            alt="SaaSpaladin"
+            className="w-32 h-32 object-contain drop-shadow-lg"
+          />
         </div>
 
         <h2 className="text-2xl font-fantasy text-paladin-dark">Halte, voyageur!</h2>
