@@ -1,17 +1,15 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Layout } from './components/Layout';
 import { StepInput } from './components/StepInput';
 import { StepReview } from './components/StepReview';
 import { StepResult } from './components/StepResult';
-import { Landing } from './components/Landing';
 import { GeminiService } from './services/geminiService';
 import { AnalysisResult, GenerationState } from './types';
 
 const App: React.FC = () => {
-  const [state, setState] = useState<GenerationState>({ step: 'landing' });
-  const [apiKey, setApiKey] = useState<string | undefined>(undefined);
-  
+  const [state, setState] = useState<GenerationState>({ step: 'idle' });
+
   // Data State
   const [newsletterText, setNewsletterText] = useState('');
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
@@ -19,35 +17,8 @@ const App: React.FC = () => {
   const [generatedImageUrl, setGeneratedImageUrl] = useState('');
   const [modelUsed, setModelUsed] = useState<string>('');
 
-  // Vérification initiale
-  useEffect(() => {
-    const checkKey = async () => {
-      // Si une clé est déjà dans l'environnement (auto-injectée), on peut passer
-      if (window.aistudio && window.aistudio.hasSelectedApiKey) {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        if (hasKey) {
-          setState({ step: 'idle' });
-        } else {
-          setState({ step: 'landing' });
-        }
-      } else {
-        setState({ step: 'landing' });
-      }
-    };
-    checkKey();
-  }, []);
-
-  // Callback appelé quand l'utilisateur a sélectionné sa clé
-  const handleKeySelected = (manualKey?: string) => {
-    if (manualKey) {
-      setApiKey(manualKey);
-    }
-    setState({ step: 'idle' });
-  };
-  
   const handleAnalyze = useCallback(async () => {
-    // On passe la clé manuelle si elle existe, sinon le service utilisera process.env
-    const service = new GeminiService(apiKey);
+    const service = new GeminiService();
     
     setState({ step: 'analyzing' });
     try {
@@ -59,10 +30,10 @@ const App: React.FC = () => {
       console.error(e);
       setState({ step: 'error', error: e.message || "Erreur d'analyse inconnue" });
     }
-  }, [newsletterText, apiKey]);
+  }, [newsletterText]);
 
   const handleGenerateImage = useCallback(async () => {
-    const service = new GeminiService(apiKey);
+    const service = new GeminiService();
 
     setState({ step: 'generating' });
     try {
@@ -74,7 +45,7 @@ const App: React.FC = () => {
       console.error(e);
       setState({ step: 'error', error: e.message || "Erreur de génération d'image" });
     }
-  }, [scenePrompt, apiKey]);
+  }, [scenePrompt]);
 
   const handleReset = () => {
     setState({ step: 'idle' });
@@ -109,27 +80,17 @@ const App: React.FC = () => {
         <div className="text-center p-8 bg-red-50 border border-red-200 rounded text-red-800">
           <h3 className="font-bold text-xl mb-2">Échec de la Quête</h3>
           <p className="mb-4">{state.error}</p>
-          <div className="flex justify-center gap-4">
-            <button 
-              onClick={() => setState({ step: 'landing' })}
-              className="px-4 py-2 border border-red-300 hover:bg-red-100 rounded"
-            >
-              Changer de Clé API
-            </button>
-            <button 
-              onClick={() => setState({ step: 'idle' })}
-              className="px-4 py-2 bg-red-200 hover:bg-red-300 rounded font-bold"
-            >
-              Réessayer
-            </button>
-          </div>
+          <button
+            onClick={() => setState({ step: 'idle' })}
+            className="px-4 py-2 bg-red-200 hover:bg-red-300 rounded font-bold"
+          >
+            Réessayer
+          </button>
         </div>
       );
     }
 
     switch (state.step) {
-      case 'landing':
-        return <Landing onConnected={handleKeySelected} />;
       case 'idle':
       case 'analyzing':
         return (

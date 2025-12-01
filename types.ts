@@ -1,6 +1,6 @@
 
 export interface GenerationState {
-  step: 'landing' | 'idle' | 'analyzing' | 'review' | 'generating' | 'complete' | 'error';
+  step: 'idle' | 'analyzing' | 'review' | 'generating' | 'complete' | 'error';
   error?: string;
 }
 
