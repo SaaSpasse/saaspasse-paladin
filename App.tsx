@@ -18,18 +18,18 @@ const PasswordScreen: React.FC<{ onSubmit: (password: string) => void; error?: s
   };
 
   return (
-    <div className="flex flex-col items-center justify-center text-center space-y-8 py-12">
-      <div className="max-w-md mx-auto space-y-6">
-        <div className="mx-auto">
-          <img
-            src="/paladin-hero.png"
-            alt="SaaSpaladin"
-            className="w-48 h-48 object-contain drop-shadow-lg"
-          />
-        </div>
+    <div className="flex flex-col items-center justify-center text-center py-8">
+      <div className="max-w-md mx-auto flex flex-col items-center space-y-6">
+        <img
+          src="/paladin-hero.png"
+          alt="SaaSpaladin"
+          className="w-56 h-56 object-contain drop-shadow-xl"
+        />
 
-        <h2 className="text-2xl font-fantasy text-paladin-dark">Halte, voyageur!</h2>
-        <p className="text-gray-600">Entrez le mot de passe pour accéder à la forge.</p>
+        <div className="space-y-2">
+          <h2 className="text-3xl font-fantasy text-paladin-dark">Halte, voyageur!</h2>
+          <p className="text-gray-600">Entrez le mot de passe pour accéder à la forge.</p>
+        </div>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded">
@@ -37,7 +37,7 @@ const PasswordScreen: React.FC<{ onSubmit: (password: string) => void; error?: s
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 w-full">
           <input
             type="password"
             value={password}
