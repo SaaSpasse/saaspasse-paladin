@@ -1,5 +1,12 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+
+interface Editorial {
+  filename: string;
+  date: string;
+  title: string;
+  slug: string;
+}
 
 interface StepInputProps {
   newsletterText: string;
@@ -8,13 +15,60 @@ interface StepInputProps {
   isLoading: boolean;
 }
 
-export const StepInput: React.FC<StepInputProps> = ({ 
-  newsletterText, 
-  setNewsletterText, 
-  onNext, 
+export const StepInput: React.FC<StepInputProps> = ({
+  newsletterText,
+  setNewsletterText,
+  onNext,
   isLoading,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [editoriaux, setEditoriaux] = useState<Editorial[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoadingEditoriaux, setIsLoadingEditoriaux] = useState(true);
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  // Fetch editoriaux on mount
+  useEffect(() => {
+    const fetchEditoriaux = async () => {
+      try {
+        const response = await fetch('/.netlify/functions/editoriaux');
+        if (response.ok) {
+          const data = await response.json();
+          setEditoriaux(data);
+        }
+      } catch (error) {
+        console.error('Error fetching editoriaux:', error);
+      } finally {
+        setIsLoadingEditoriaux(false);
+      }
+    };
+    fetchEditoriaux();
+  }, []);
+
+  // Filter editoriaux based on search
+  const filteredEditoriaux = editoriaux.filter(e =>
+    e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    e.date.includes(searchQuery)
+  );
+
+  const handleSelectEditorial = async (editorial: Editorial) => {
+    setIsLoadingContent(true);
+    setShowDropdown(false);
+    setSearchQuery(editorial.title);
+
+    try {
+      const response = await fetch(`/.netlify/functions/editorial-content?filename=${encodeURIComponent(editorial.filename)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setNewsletterText(data.content);
+      }
+    } catch (error) {
+      console.error('Error fetching editorial content:', error);
+    } finally {
+      setIsLoadingContent(false);
+    }
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -34,10 +88,55 @@ export const StepInput: React.FC<StepInputProps> = ({
       <div className="border-b-2 border-paladin-dark/10 pb-4 mb-6">
         <h2 className="text-2xl font-fantasy text-paladin-dark mb-2">Quelle histoire on raconte aujourd'hui?</h2>
         <p className="text-gray-600 text-sm">
-          Déposez votre missive (newsletter) ci-dessous. Le AI Scribe l'analysera pour en extraire l'essence magique.
+          Sélectionnez un éditorial existant ou déposez votre missive ci-dessous.
           <br/>
-          <span className="text-paladin-purple text-xs italic opacity-80">* L'ancrage visuel du SaaSpaladin est géré automatiquement par la Forge (aka le back-end).</span>
+          <span className="text-paladin-purple text-xs italic opacity-80">* L'ancrage visuel du SaaSpaladin est géré automatiquement par la Forge.</span>
         </p>
+      </div>
+
+      {/* Editorial Search */}
+      <div className="space-y-2">
+        <label className="block text-sm font-bold text-paladin-dark uppercase tracking-wide">
+          Charger un éditorial existant
+        </label>
+        <div className="relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowDropdown(true);
+            }}
+            onFocus={() => setShowDropdown(true)}
+            placeholder={isLoadingEditoriaux ? "Chargement des éditoriaux..." : "Rechercher un éditorial..."}
+            disabled={isLoadingEditoriaux}
+            className="w-full p-3 border-2 border-gray-300 rounded-sm focus:border-paladin-purple focus:ring-0 text-sm bg-gray-50"
+          />
+          {isLoadingContent && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <svg className="animate-spin h-5 w-5 text-paladin-purple" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+          )}
+
+          {/* Dropdown */}
+          {showDropdown && searchQuery && filteredEditoriaux.length > 0 && (
+            <div className="absolute z-50 w-full mt-1 bg-white border-2 border-paladin-dark rounded-sm shadow-lg max-h-60 overflow-y-auto">
+              {filteredEditoriaux.slice(0, 10).map((editorial) => (
+                <button
+                  key={editorial.filename}
+                  onClick={() => handleSelectEditorial(editorial)}
+                  className="w-full px-4 py-3 text-left hover:bg-paladin-purple/10 border-b border-gray-100 last:border-b-0 transition-colors"
+                >
+                  <div className="font-medium text-paladin-dark">{editorial.title}</div>
+                  <div className="text-xs text-gray-500">{editorial.date}</div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Text Area */}
@@ -52,7 +151,7 @@ export const StepInput: React.FC<StepInputProps> = ({
           onChange={(e) => setNewsletterText(e.target.value)}
         />
         <div className="flex justify-between items-center">
-          <button 
+          <button
             onClick={() => fileInputRef.current?.click()}
             className="text-sm text-paladin-purple font-semibold hover:underline cursor-pointer flex items-center gap-2"
           >
@@ -61,12 +160,12 @@ export const StepInput: React.FC<StepInputProps> = ({
             </svg>
             Charger un fichier .txt ou .md
           </button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            accept=".txt,.md" 
-            onChange={handleFileUpload} 
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept=".txt,.md"
+            onChange={handleFileUpload}
           />
         </div>
       </div>
