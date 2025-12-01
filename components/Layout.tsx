@@ -9,13 +9,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 bg-paladin-cream">
       <header className="relative z-50 mb-6 text-center max-w-2xl w-full flex flex-col items-center py-2 transition-all">
-        {/* Avatar - Image du SaaSpaladin */}
-        <div className="z-10 -mb-6 relative group">
-          <img
-            src="/paladin-hero.png"
-            alt="SaaSpaladin"
-            className="w-28 h-28 object-contain transition-transform duration-500 group-hover:scale-110 drop-shadow-lg"
-          />
+        {/* Avatar Médaillon - Dessin SVG du SaaSpaladin */}
+        <div className="w-20 h-20 rounded-full border-4 border-paladin-dark bg-paladin-purple overflow-hidden shadow-[4px_4px_0px_0px_rgba(7,10,38,1)] z-10 -mb-8 relative group flex items-center justify-center">
+           <svg viewBox="0 0 100 100" className="w-full h-full transition-transform duration-500 group-hover:scale-110">
+             <rect width="100" height="100" fill="#853DFF" />
+             <path d="M10 100 Q 50 70 90 100 L 90 100 L 10 100 Z" fill="#7E4874" />
+             <path d="M20 100 Q 50 80 80 100" fill="none" stroke="#070A26" strokeWidth="2" />
+             <rect x="25" y="15" width="50" height="70" rx="25" fill="#ECEBF1" stroke="#070A26" strokeWidth="3" />
+             <rect x="38" y="35" width="8" height="25" rx="3" fill="#070A26" />
+             <rect x="54" y="35" width="8" height="25" rx="3" fill="#070A26" />
+             <path d="M35 25 L 40 28" stroke="#070A26" strokeWidth="1" opacity="0.5" />
+             <path d="M65 20 L 60 25" stroke="#070A26" strokeWidth="1" opacity="0.5" />
+           </svg>
         </div>
 
         <div className="inline-block p-3 pt-10 border-4 border-paladin-dark bg-paladin-purple text-white shadow-[6px_6px_0px_0px_rgba(7,10,38,1)] rotate-[-1deg]">

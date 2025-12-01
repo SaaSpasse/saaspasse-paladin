@@ -24,7 +24,7 @@ const PasswordScreen: React.FC<{ onSubmit: (password: string) => void; error?: s
           <img
             src="/paladin-hero.png"
             alt="SaaSpaladin"
-            className="w-32 h-32 object-contain drop-shadow-lg"
+            className="w-48 h-48 object-contain drop-shadow-lg"
           />
         </div>
 
