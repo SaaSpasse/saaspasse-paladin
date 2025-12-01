@@ -2,6 +2,8 @@ import type { Handler } from "@netlify/functions";
 import { REF_IMAGE } from "./ref-image";
 
 const SAASPALADIN_MASTER_PROMPT_FR = `
+FORMAT: Image HORIZONTALE/PAYSAGE obligatoire, ratio 1.9:1, dimensions 1200x630 pixels (format header newsletter beehiiv).
+
 Petit chevalier SaaSpaladin, 1 m 20.
 TÊTE : Casque TRAPU et COMPACT couleur crème #F6F3EC, forme gélule/œuf HORIZONTAL (plus large que haut), proportions presque carrées. Sommet ARRONDI EN DÔME, jamais pointu ni allongé verticalement. Le casque ressemble à un œuf couché sur le côté.
 YEUX : Deux fentes verticales noires #000000 parallèles, centrées sur le casque. Pas d'autre ouverture.
@@ -10,6 +12,7 @@ STYLE : Illustration ligne claire franco-belge, hachures fines, style Moebius x 
 `;
 
 const NEGATIVE_PROMPT = `
+portrait orientation, vertical image, square image, 1:1 ratio,
 visière horizontale, T-shaped visor, Mandalorian,
 tête de boule, sphere head, ball head, bubble head,
 casque pointu, sharp angles, spiky helmet, square helmet,
