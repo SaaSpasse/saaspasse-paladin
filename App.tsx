@@ -1,13 +1,68 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { StepInput } from './components/StepInput';
 import { StepReview } from './components/StepReview';
 import { StepResult } from './components/StepResult';
-import { GeminiService } from './services/geminiService';
+import { GeminiService, hasSecret, setSecret, clearSecret } from './services/geminiService';
 import { AnalysisResult, GenerationState } from './types';
 
+const PasswordScreen: React.FC<{ onSubmit: (password: string) => void; error?: string }> = ({ onSubmit, error }) => {
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.trim()) {
+      onSubmit(password.trim());
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center text-center space-y-8 py-12">
+      <div className="max-w-md mx-auto space-y-6">
+        <div className="w-24 h-24 rounded-full border-4 border-paladin-dark bg-paladin-purple overflow-hidden shadow-[6px_6px_0px_0px_rgba(7,10,38,1)] mx-auto flex items-center justify-center">
+          <svg viewBox="0 0 100 100" className="w-full h-full">
+            <rect width="100" height="100" fill="#853DFF" />
+            <path d="M10 100 Q 50 70 90 100 L 90 100 L 10 100 Z" fill="#7E4874" />
+            <rect x="25" y="15" width="50" height="70" rx="25" fill="#ECEBF1" stroke="#070A26" strokeWidth="3" />
+            <rect x="38" y="35" width="8" height="25" rx="3" fill="#070A26" />
+            <rect x="54" y="35" width="8" height="25" rx="3" fill="#070A26" />
+          </svg>
+        </div>
+
+        <h2 className="text-2xl font-fantasy text-paladin-dark">Halte, voyageur!</h2>
+        <p className="text-gray-600">Entrez le mot de passe pour accéder à la forge.</p>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Mot de passe"
+            className="w-full p-3 border-2 border-paladin-dark rounded focus:border-paladin-purple outline-none text-center font-mono text-lg"
+            autoFocus
+          />
+          <button
+            type="submit"
+            className="w-full bg-paladin-purple text-paladin-cream px-8 py-4 font-fantasy text-xl shadow-[6px_6px_0px_0px_rgba(7,10,38,1)] hover:translate-y-1 hover:shadow-none transition-all border-2 border-paladin-dark"
+          >
+            Entrer dans la forge
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(hasSecret());
+  const [authError, setAuthError] = useState<string | undefined>();
   const [state, setState] = useState<GenerationState>({ step: 'idle' });
 
   // Data State
@@ -17,9 +72,21 @@ const App: React.FC = () => {
   const [generatedImageUrl, setGeneratedImageUrl] = useState('');
   const [modelUsed, setModelUsed] = useState<string>('');
 
+  const handlePasswordSubmit = (password: string) => {
+    setSecret(password);
+    setIsAuthenticated(true);
+    setAuthError(undefined);
+  };
+
+  const handleAuthError = () => {
+    clearSecret();
+    setIsAuthenticated(false);
+    setAuthError("Mot de passe invalide");
+  };
+
   const handleAnalyze = useCallback(async () => {
     const service = new GeminiService();
-    
+
     setState({ step: 'analyzing' });
     try {
       const result = await service.analyzeNewsletter(newsletterText);
@@ -28,7 +95,11 @@ const App: React.FC = () => {
       setState({ step: 'review' });
     } catch (e: any) {
       console.error(e);
-      setState({ step: 'error', error: e.message || "Erreur d'analyse inconnue" });
+      if (e.message?.includes('invalide')) {
+        handleAuthError();
+      } else {
+        setState({ step: 'error', error: e.message || "Erreur d'analyse inconnue" });
+      }
     }
   }, [newsletterText]);
 
@@ -43,7 +114,11 @@ const App: React.FC = () => {
       setState({ step: 'complete' });
     } catch (e: any) {
       console.error(e);
-      setState({ step: 'error', error: e.message || "Erreur de génération d'image" });
+      if (e.message?.includes('invalide')) {
+        handleAuthError();
+      } else {
+        setState({ step: 'error', error: e.message || "Erreur de génération d'image" });
+      }
     }
   }, [scenePrompt]);
 
@@ -55,26 +130,27 @@ const App: React.FC = () => {
     setGeneratedImageUrl('');
   };
 
-  // Helper pour générer un nom de fichier propre
   const getDownloadFilename = () => {
     if (!newsletterText) return "SaaSpaladin-header.png";
-    
-    // Prend la première ligne non vide
+
     const firstLine = newsletterText.split('\n').find(line => line.trim().length > 0) || "newsletter";
-    
-    // Nettoie: garde alphanumérique, remplace espaces par tirets, lowercase
+
     const slug = firstLine
-      .substring(0, 50) // Limite la longueur
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Enlève accents
-      .replace(/[^a-zA-Z0-9 ]/g, "") // Enlève caractères spéciaux
+      .substring(0, 50)
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9 ]/g, "")
       .trim()
-      .replace(/\s+/g, "-") // Espaces -> tirets
+      .replace(/\s+/g, "-")
       .toLowerCase();
 
     return `SaaSpaladin-header-${slug || "gen"}.png`;
   };
 
   const renderContent = () => {
+    if (!isAuthenticated) {
+      return <PasswordScreen onSubmit={handlePasswordSubmit} error={authError} />;
+    }
+
     if (state.step === 'error') {
       return (
         <div className="text-center p-8 bg-red-50 border border-red-200 rounded text-red-800">

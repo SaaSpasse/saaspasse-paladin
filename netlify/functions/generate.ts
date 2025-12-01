@@ -21,6 +21,13 @@ export const handler: Handler = async (event) => {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
+  // Vérifier le mot de passe
+  const password = event.headers["x-paladin-secret"];
+  const expectedPassword = process.env.PALADIN_SECRET;
+  if (!expectedPassword || password !== expectedPassword) {
+    return { statusCode: 401, body: JSON.stringify({ error: "Mot de passe invalide" }) };
+  }
+
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
     return { statusCode: 500, body: JSON.stringify({ error: "API_KEY not configured" }) };
