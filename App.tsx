@@ -18,17 +18,17 @@ const PasswordScreen: React.FC<{ onSubmit: (password: string) => void; error?: s
   };
 
   return (
-    <div className="flex flex-col items-center justify-center text-center py-8">
-      <div className="max-w-md mx-auto flex flex-col items-center space-y-6">
+    <div className="flex flex-col items-center text-center py-4">
+      <div className="max-w-md mx-auto flex flex-col items-center space-y-4">
         <img
           src="/paladin-hero.png"
           alt="SaaSpaladin"
-          className="w-56 h-56 object-contain drop-shadow-xl"
+          className="w-44 h-44 object-contain drop-shadow-xl"
         />
 
-        <div className="space-y-2">
-          <h2 className="text-3xl font-fantasy text-paladin-dark">Halte, voyageur!</h2>
-          <p className="text-gray-600">Entrez le mot de passe pour accéder à la forge.</p>
+        <div className="space-y-1">
+          <h2 className="text-2xl font-fantasy text-paladin-dark">Halte, voyageur!</h2>
+          <p className="text-gray-600 text-sm">Entrez le mot de passe pour accéder à la forge.</p>
         </div>
 
         {error && (

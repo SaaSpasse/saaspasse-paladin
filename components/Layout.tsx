@@ -7,7 +7,7 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 bg-paladin-cream">
+    <div className="min-h-screen flex flex-col items-center p-4 sm:p-8 bg-paladin-cream pt-8 sm:pt-12">
       <header className="relative z-50 mb-6 text-center max-w-2xl w-full flex flex-col items-center py-2 transition-all">
         {/* Avatar Médaillon - Dessin SVG du SaaSpaladin */}
         <div className="w-20 h-20 rounded-full border-4 border-paladin-dark bg-paladin-purple overflow-hidden shadow-[4px_4px_0px_0px_rgba(7,10,38,1)] z-10 -mb-8 relative group flex items-center justify-center">
