@@ -48,8 +48,8 @@ export const handler: Handler = async (event) => {
 
     // Stratégie de Fallback : Essayer Pro, si échec, essayer Flash
     const models = [
-      { name: "gemini-2.0-flash-exp", label: "Gemini 2.0 Flash (Haute Qualité)" },
-      { name: "gemini-2.0-flash-exp-image-generation", label: "Gemini 2.0 Flash Image" },
+      { name: "gemini-3-pro-image-preview", label: "Gemini 3 Pro (Haute Qualité)" },
+      { name: "gemini-2.5-flash-preview-05-20", label: "Gemini 2.5 Flash (Mode Rapide)" },
     ];
 
     let lastError = null;
