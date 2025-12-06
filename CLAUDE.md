@@ -5,7 +5,7 @@
 Générateur d'images header pour la newsletter beehiiv de SaaSpasse. L'application utilise l'IA (Gemini) pour analyser le texte d'un éditorial et générer une illustration mettant en scène le personnage "SaaSpaladin" - un petit chevalier de 1m20 au casque crème sans visage.
 
 **URL Production:** https://paladin.saaspasse.com
-**Mot de passe:** GREMLIN
+**Mot de passe:** Voir variable `PALADIN_SECRET` dans Netlify env vars
 **Repo:** https://github.com/SaaSpasse/saaspasse-paladin
 
 ## Stack technique
@@ -39,7 +39,7 @@ Générateur d'images header pour la newsletter beehiiv de SaaSpasse. L'applicat
 
 ## Flow utilisateur
 
-1. **Authentification** → Mot de passe "GREMLIN"
+1. **Authentification** → Mot de passe (voir Netlify env vars)
 2. **Input** → Sélectionner un éditorial existant OU coller/uploader du texte
 3. **Analyse** → Gemini extrait le thème et crée une métaphore médiévale
 4. **Review** → L'utilisateur peut modifier le prompt visuel
@@ -68,11 +68,15 @@ Petit chevalier de 1m20 avec:
 | CEO/Manager | Le Paladin consultant cartes ou parchemins |
 | Code | Runes magiques, parchemins, forge |
 
+## Préférences Claude
+
+- **Mots de passe et clés API:** Ne jamais afficher en clair. Toujours tronquer/masquer (ex: `GRE***`) et indiquer où trouver la valeur complète.
+
 ## Variables d'environnement
 
 ```
-GEMINI_API_KEY=xxx          # Clé API Google Gemini
-FORGE_PASSWORD=GREMLIN      # Mot de passe d'accès
+GEMINI_API_KEY=xxx          # Clé API Google Gemini (voir Netlify)
+FORGE_PASSWORD=***          # Mot de passe d'accès (voir Netlify env vars)
 ```
 
 ## Commandes
