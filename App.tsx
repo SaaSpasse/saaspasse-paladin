@@ -69,6 +69,7 @@ const App: React.FC = () => {
   const [scenePrompt, setScenePrompt] = useState('');
   const [generatedImageUrl, setGeneratedImageUrl] = useState('');
   const [modelUsed, setModelUsed] = useState<string>('');
+  const [imageVersion, setImageVersion] = useState(1);
 
   const handlePasswordSubmit = (password: string) => {
     setSecret(password);
@@ -109,6 +110,10 @@ const App: React.FC = () => {
       const result = await service.generateIllustration(scenePrompt);
       setGeneratedImageUrl(result.imageUrl);
       setModelUsed(result.modelUsed);
+      // Incrémenter la version seulement si on régénère (déjà en 'complete')
+      if (state.step === 'generating' && generatedImageUrl) {
+        setImageVersion(v => v + 1);
+      }
       setState({ step: 'complete' });
     } catch (e: any) {
       console.error(e);
@@ -118,7 +123,7 @@ const App: React.FC = () => {
         setState({ step: 'error', error: e.message || "Erreur de génération d'image" });
       }
     }
-  }, [scenePrompt]);
+  }, [scenePrompt, state.step, generatedImageUrl]);
 
   const handleReset = () => {
     setState({ step: 'idle' });
@@ -126,10 +131,11 @@ const App: React.FC = () => {
     setAnalysis(null);
     setScenePrompt('');
     setGeneratedImageUrl('');
+    setImageVersion(1);
   };
 
   const getDownloadFilename = () => {
-    if (!newsletterText) return "SaaSpaladin-header.png";
+    if (!newsletterText) return `SaaSpaladin-header-v${imageVersion}.png`;
 
     const firstLine = newsletterText.split('\n').find(line => line.trim().length > 0) || "newsletter";
 
@@ -141,7 +147,7 @@ const App: React.FC = () => {
       .replace(/\s+/g, "-")
       .toLowerCase();
 
-    return `SaaSpaladin-header-${slug || "gen"}.png`;
+    return `SaaSpaladin-${slug || "header"}-v${imageVersion}.png`;
   };
 
   const renderContent = () => {
