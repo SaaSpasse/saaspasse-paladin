@@ -16,17 +16,46 @@ interface Editorial {
   slug: string;
 }
 
+// Convertit un slug en titre lisible (Sentence case avec apostrophes françaises)
+function slugToTitle(slug: string): string {
+  // Articles élidés français qui doivent être suivis d'une apostrophe
+  const elidedArticles = ['l', 'd', 'n', 'c', 'j', 'm', 't', 's', 'qu'];
+
+  const words = slug.split("-");
+  const result: string[] = [];
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    const nextWord = words[i + 1];
+
+    // Si c'est un article élidé suivi d'un autre mot, on fusionne avec apostrophe
+    if (nextWord && elidedArticles.includes(word.toLowerCase())) {
+      // Capitalize le premier mot de la phrase, sinon minuscule
+      const prefix = result.length === 0
+        ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        : word.toLowerCase();
+      result.push(prefix + "'" + nextWord.toLowerCase());
+      i++; // Skip le mot suivant car il est fusionné
+    } else {
+      // Sentence case: majuscule seulement au premier mot
+      if (result.length === 0) {
+        result.push(word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+      } else {
+        result.push(word.toLowerCase());
+      }
+    }
+  }
+
+  return result.join(" ");
+}
+
 function parseFilename(filename: string): Editorial | null {
   // Format: YYYY-MM-DD-titre-slug.md
   const match = filename.match(/^(\d{4}-\d{2}-\d{2})-(.+)\.md$/);
   if (!match) return null;
 
   const [, date, slug] = match;
-  // Convert slug to title (replace dashes with spaces, capitalize)
-  const title = slug
-    .split("-")
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+  const title = slugToTitle(slug);
 
   return { filename, date, title, slug };
 }
