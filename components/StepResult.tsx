@@ -24,7 +24,7 @@ export const StepResult: React.FC<StepResultProps> = ({
     <div className="space-y-6 animate-fade-in text-center">
       <div className="border-b-2 border-paladin-dark/10 pb-4 mb-6 text-left flex justify-between items-end">
         <div>
-          <h2 className="text-2xl font-fantasy text-paladin-dark mb-2">Voici le résultat!🤞</h2>
+          <h2 className="text-2xl font-fantasy text-paladin-dark mb-2">Voici le résultat!</h2>
           <p className="text-gray-600 text-sm">
             Votre illustration est prête pour l'expédition.
           </p>

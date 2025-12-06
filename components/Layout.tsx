@@ -44,7 +44,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       </main>
 
       <footer className="mt-12 text-paladin-dark/60 text-sm font-fantasy text-center pb-8">
-        © 2025 <a href="https://saaspasse.beehiiv.com/subscribe?_gl=1*fub7n0*_ga*MTM2NDMwNDA2NS4xNzM5NDg3Mzc5*_ga_500JY1EZSE*czE3NjQ1NDE3NzQkbzMzMyRnMCR0MTc2NDU0MTc3NCRqNjAkbDAkaDA." target="_blank" rel="noreferrer" className="hover:text-paladin-purple underline transition-colors">SaaSpasse</a> • Forgé avec Gemini 2.5 Flash & 3 Pro
+        © 2025 <a href="https://saaspasse.beehiiv.com/subscribe" target="_blank" rel="noreferrer" className="hover:text-paladin-purple underline transition-colors">SaaSpasse</a> • Forgé avec Gemini 2.5 Flash & 3 Pro
       </footer>
     </div>
   );
