@@ -201,10 +201,11 @@ export const StepInput: React.FC<StepInputProps> = ({
           Texte de la Newsletter
         </label>
         <textarea
-          className="w-full h-48 p-4 border-2 border-gray-300 rounded-sm focus:border-paladin-purple focus:ring-0 font-mono text-sm resize-none bg-gray-50"
-          placeholder="# Titre de la newsletter..."
+          className="w-full h-48 p-4 border-2 border-gray-300 rounded-sm focus:border-paladin-purple focus:ring-0 font-mono text-sm resize-none bg-gray-50 disabled:opacity-60 disabled:cursor-wait"
+          placeholder={isLoadingContent ? "Chargement de l'éditorial..." : "# Titre de la newsletter..."}
           value={newsletterText}
           onChange={(e) => setNewsletterText(e.target.value)}
+          disabled={isLoadingContent}
         />
         <div className="flex justify-between items-center">
           <button

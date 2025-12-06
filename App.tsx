@@ -182,15 +182,38 @@ const App: React.FC = () => {
     }
 
     if (state.step === 'error') {
+      const errorMsg = state.error || '';
+      const isPasswordError = errorMsg.toLowerCase().includes('invalide') || errorMsg.includes('401');
+      const isNetworkError = errorMsg.toLowerCase().includes('network') || errorMsg.toLowerCase().includes('fetch');
+
       return (
-        <div className="text-center p-8 bg-red-50 border border-red-200 rounded text-red-800">
-          <h3 className="font-bold text-xl mb-2">Échec de la Quête</h3>
-          <p className="mb-4">{state.error}</p>
+        <div className="text-center p-8 bg-red-50 border-2 border-red-300 rounded text-red-900">
+          <h3 className="font-bold text-xl mb-2 font-fantasy">
+            {isPasswordError ? 'Accès refusé' : 'Échec de la Quête'}
+          </h3>
+          <p className="mb-2">{state.error}</p>
+          {isPasswordError && (
+            <p className="text-sm mb-4 text-red-700">
+              Votre session a peut-être expiré. Reconnectez-vous.
+            </p>
+          )}
+          {isNetworkError && (
+            <p className="text-sm mb-4 text-red-700">
+              Vérifiez votre connexion internet et réessayez.
+            </p>
+          )}
           <button
-            onClick={() => setState({ step: 'idle' })}
-            className="px-4 py-2 bg-red-200 hover:bg-red-300 rounded font-bold"
+            onClick={() => {
+              if (isPasswordError) {
+                clearSecret();
+                setIsAuthenticated(false);
+                setAuthError(undefined);
+              }
+              setState({ step: 'idle' });
+            }}
+            className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded font-bold transition-colors"
           >
-            Réessayer
+            {isPasswordError ? 'Se reconnecter' : 'Réessayer'}
           </button>
         </div>
       );
