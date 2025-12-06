@@ -22,11 +22,23 @@ export const StepInput: React.FC<StepInputProps> = ({
   isLoading,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [editoriaux, setEditoriaux] = useState<Editorial[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoadingEditoriaux, setIsLoadingEditoriaux] = useState(true);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Fetch editoriaux on mount
   useEffect(() => {
@@ -46,11 +58,13 @@ export const StepInput: React.FC<StepInputProps> = ({
     fetchEditoriaux();
   }, []);
 
-  // Filter editoriaux based on search
-  const filteredEditoriaux = editoriaux.filter(e =>
-    e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.date.includes(searchQuery)
-  );
+  // Filter editoriaux based on search (show all if empty query)
+  const filteredEditoriaux = searchQuery.trim()
+    ? editoriaux.filter(e =>
+        e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        e.date.includes(searchQuery)
+      )
+    : editoriaux;
 
   const handleSelectEditorial = async (editorial: Editorial) => {
     setIsLoadingContent(true);
@@ -96,34 +110,65 @@ export const StepInput: React.FC<StepInputProps> = ({
 
       {/* Editorial Search */}
       <div className="space-y-2">
-        <label className="block text-sm font-bold text-paladin-dark uppercase tracking-wide">
-          Charger un éditorial existant
-        </label>
-        <div className="relative">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setShowDropdown(true);
-            }}
-            onFocus={() => setShowDropdown(true)}
-            placeholder={isLoadingEditoriaux ? "Chargement des éditoriaux..." : "Rechercher un éditorial..."}
-            disabled={isLoadingEditoriaux}
-            className="w-full p-3 border-2 border-gray-300 rounded-sm focus:border-paladin-purple focus:ring-0 text-sm bg-gray-50"
-          />
-          {isLoadingContent && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <svg className="animate-spin h-5 w-5 text-paladin-purple" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            </div>
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-bold text-paladin-dark uppercase tracking-wide">
+            Charger un éditorial existant
+          </label>
+          {!isLoadingEditoriaux && editoriaux.length > 0 && (
+            <span className="text-xs bg-paladin-purple/10 text-paladin-purple px-2 py-1 rounded-full font-medium">
+              {editoriaux.length} éditoriaux
+            </span>
           )}
+        </div>
+        <div className="relative" ref={dropdownRef}>
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowDropdown(true);
+              }}
+              onFocus={() => setShowDropdown(true)}
+              placeholder={isLoadingEditoriaux ? "Chargement des éditoriaux..." : "Cliquer pour voir vos éditoriaux ou taper pour filtrer..."}
+              disabled={isLoadingEditoriaux}
+              className="w-full p-3 pr-10 border-2 border-gray-300 rounded-sm focus:border-paladin-purple focus:ring-0 text-sm bg-gray-50"
+            />
+            {isLoadingContent ? (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <svg className="animate-spin h-5 w-5 text-paladin-purple" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+            ) : (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <svg
+                  className={`h-5 w-5 text-gray-400 transition-transform ${showDropdown ? 'rotate-180' : ''}`}
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            )}
+          </div>
 
           {/* Dropdown */}
-          {showDropdown && searchQuery && filteredEditoriaux.length > 0 && (
+          {showDropdown && filteredEditoriaux.length > 0 && (
             <div className="absolute z-50 w-full mt-1 bg-white border-2 border-paladin-dark rounded-sm shadow-lg max-h-60 overflow-y-auto">
+              {!searchQuery.trim() && (
+                <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Vos éditoriaux récents
+                </div>
+              )}
+              {searchQuery.trim() && (
+                <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  {filteredEditoriaux.length} résultat{filteredEditoriaux.length > 1 ? 's' : ''} pour "{searchQuery}"
+                </div>
+              )}
               {filteredEditoriaux.slice(0, 10).map((editorial) => (
                 <button
                   key={editorial.filename}
@@ -134,6 +179,16 @@ export const StepInput: React.FC<StepInputProps> = ({
                   <div className="text-xs text-gray-500">{editorial.date}</div>
                 </button>
               ))}
+            </div>
+          )}
+          {showDropdown && filteredEditoriaux.length === 0 && !isLoadingEditoriaux && (
+            <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-300 rounded-sm shadow-lg">
+              <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                {searchQuery.trim()
+                  ? `Aucun éditorial trouvé pour "${searchQuery}"`
+                  : "Aucun éditorial disponible"
+                }
+              </div>
             </div>
           )}
         </div>
