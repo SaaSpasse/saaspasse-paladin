@@ -20,19 +20,23 @@ const PasswordScreen: React.FC<{ onSubmit: (password: string) => void; error?: s
     setValidationError(undefined);
 
     try {
-      const response = await fetch('/.netlify/functions/validate-password', {
+      // Utilise la fonction analyze avec un texte minimal pour valider le password
+      const response = await fetch('/.netlify/functions/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: password.trim() }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-paladin-secret': password.trim(),
+        },
+        body: JSON.stringify({ text: 'test' }),
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.valid) {
-        onSubmit(password.trim());
-      } else {
-        setValidationError(data.error || 'Mot de passe invalide');
+      if (response.status === 401) {
+        setValidationError('Mot de passe invalide');
+        return;
       }
+
+      // Password valide (même si analyze retourne une autre erreur, le password est bon)
+      onSubmit(password.trim());
     } catch (err) {
       setValidationError('Erreur de connexion. Réessayez.');
     } finally {
