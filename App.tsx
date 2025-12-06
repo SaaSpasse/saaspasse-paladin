@@ -43,6 +43,7 @@ const PasswordScreen: React.FC<{ onSubmit: (password: string) => void; error?: s
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Mot de passe"
+            autoComplete="current-password"
             className="w-full p-3 border-2 border-paladin-dark rounded focus:border-paladin-purple outline-none text-center font-mono text-lg"
             autoFocus
           />
