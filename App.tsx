@@ -9,11 +9,34 @@ import { AnalysisResult, GenerationState } from './types';
 
 const PasswordScreen: React.FC<{ onSubmit: (password: string) => void; error?: string }> = ({ onSubmit, error }) => {
   const [password, setPassword] = useState('');
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationError, setValidationError] = useState<string | undefined>(error);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.trim()) {
-      onSubmit(password.trim());
+    if (!password.trim() || isValidating) return;
+
+    setIsValidating(true);
+    setValidationError(undefined);
+
+    try {
+      const response = await fetch('/.netlify/functions/validate-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: password.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.valid) {
+        onSubmit(password.trim());
+      } else {
+        setValidationError(data.error || 'Mot de passe invalide');
+      }
+    } catch (err) {
+      setValidationError('Erreur de connexion. Réessayez.');
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -31,9 +54,9 @@ const PasswordScreen: React.FC<{ onSubmit: (password: string) => void; error?: s
           <p className="text-gray-600 text-sm">Entrez le mot de passe pour accéder à la forge.</p>
         </div>
 
-        {error && (
+        {validationError && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded">
-            {error}
+            {validationError}
           </div>
         )}
 
@@ -44,14 +67,16 @@ const PasswordScreen: React.FC<{ onSubmit: (password: string) => void; error?: s
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Mot de passe"
             autoComplete="current-password"
-            className="w-full p-3 border-2 border-paladin-dark rounded focus:border-paladin-purple outline-none text-center font-mono text-lg"
+            disabled={isValidating}
+            className="w-full p-3 border-2 border-paladin-dark rounded focus:border-paladin-purple outline-none text-center font-mono text-lg disabled:opacity-50"
             autoFocus
           />
           <button
             type="submit"
-            className="w-full bg-paladin-purple text-paladin-cream px-8 py-4 font-fantasy text-xl shadow-[6px_6px_0px_0px_rgba(7,10,38,1)] hover:translate-y-1 hover:shadow-none transition-all border-2 border-paladin-dark"
+            disabled={isValidating || !password.trim()}
+            className="w-full bg-paladin-purple text-paladin-cream px-8 py-4 font-fantasy text-xl shadow-[6px_6px_0px_0px_rgba(7,10,38,1)] hover:translate-y-1 hover:shadow-none transition-all border-2 border-paladin-dark disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-[6px_6px_0px_0px_rgba(7,10,38,1)]"
           >
-            Entrer dans la forge
+            {isValidating ? 'Vérification...' : 'Entrer dans la forge'}
           </button>
         </form>
       </div>
