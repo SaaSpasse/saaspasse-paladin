@@ -15,11 +15,6 @@ interface StepInputProps {
   isLoading: boolean;
 }
 
-// Convert to Sentence case (first letter uppercase, rest lowercase)
-const toSentenceCase = (str: string): string => {
-  if (!str) return str;
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-};
 
 export const StepInput: React.FC<StepInputProps> = ({
   newsletterText,
@@ -75,7 +70,7 @@ export const StepInput: React.FC<StepInputProps> = ({
   const handleSelectEditorial = async (editorial: Editorial) => {
     setIsLoadingContent(true);
     setShowDropdown(false);
-    setSearchQuery(toSentenceCase(editorial.title));
+    setSearchQuery(editorial.title);
 
     try {
       const response = await fetch(`/.netlify/functions/editorial-content?filename=${encodeURIComponent(editorial.filename)}`);
@@ -181,7 +176,7 @@ export const StepInput: React.FC<StepInputProps> = ({
                   onClick={() => handleSelectEditorial(editorial)}
                   className="w-full px-4 py-3 text-left hover:bg-paladin-purple/10 border-b border-gray-100 last:border-b-0 transition-colors"
                 >
-                  <div className="font-medium text-paladin-dark">{toSentenceCase(editorial.title)}</div>
+                  <div className="font-medium text-paladin-dark">{editorial.title}</div>
                   <div className="text-xs text-gray-500">{editorial.date}</div>
                 </button>
               ))}
