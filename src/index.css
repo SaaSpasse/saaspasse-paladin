@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+  --font-fantasy: 'Cinzel', serif;
+
+  --color-paladin-cream: #ECEBF1;
+  --color-paladin-dark: #070A26;
+  --color-paladin-purple: #853DFF;
+  --color-paladin-lightPurple: #AD80FF;
+  --color-paladin-brown: #6B4B30;
+  --color-paladin-orange: #FF8F1F;
+  --color-paladin-green: #00FF9B;
+}
+
+body {
+  background-color: #ECEBF1;
+  color: #070A26;
+}
