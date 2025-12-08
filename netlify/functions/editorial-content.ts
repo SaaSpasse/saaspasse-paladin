@@ -1,7 +1,7 @@
 import type { Handler } from "@netlify/functions";
 
 const GITHUB_REPO = "SaaSpasse/saaspasse-editoriaux";
-const POSTS_COMPLETS_PATH = "posts-complets";
+const EDITORIAUX_PATH = "editoriaux";
 
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== "GET") {
@@ -20,7 +20,7 @@ export const handler: Handler = async (event) => {
 
   try {
     const response = await fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/contents/${POSTS_COMPLETS_PATH}/${filename}`,
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${EDITORIAUX_PATH}/${filename}`,
       {
         headers: {
           "Accept": "application/vnd.github.v3.raw",

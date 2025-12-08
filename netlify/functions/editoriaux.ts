@@ -1,13 +1,13 @@
 import type { Handler } from "@netlify/functions";
 
 const GITHUB_REPO = "SaaSpasse/saaspasse-editoriaux";
+const EDITORIAUX_PATH = "editoriaux";
 const POSTS_COMPLETS_PATH = "posts-complets";
 
 interface GitHubFile {
   name: string;
   path: string;
   type: string;
-  download_url: string;
 }
 
 interface Editorial {
@@ -35,15 +35,42 @@ function parseFilename(filename: string): { date: string; slug: string } | null 
   return { date: match[1], slug: match[2] };
 }
 
+// Fallback: convertit un slug en titre lisible
+function slugToTitle(slug: string): string {
+  const elidedArticles = ['l', 'd', 'n', 'c', 'j', 'm', 't', 's', 'qu'];
+  const words = slug.split("-");
+  const result: string[] = [];
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    const nextWord = words[i + 1];
+
+    if (nextWord && elidedArticles.includes(word.toLowerCase())) {
+      const prefix = result.length === 0
+        ? word.charAt(0).toLocaleUpperCase('fr-FR') + word.slice(1).toLowerCase()
+        : word.toLowerCase();
+      result.push(prefix + "'" + nextWord.toLowerCase());
+      i++;
+    } else {
+      if (result.length === 0) {
+        result.push(word.charAt(0).toLocaleUpperCase('fr-FR') + word.slice(1).toLowerCase());
+      } else {
+        result.push(word.toLowerCase());
+      }
+    }
+  }
+  return result.join(" ");
+}
+
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== "GET") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
   try {
-    // 1. Récupérer la liste des fichiers dans posts-complets/
+    // 1. Récupérer la liste des fichiers dans editoriaux/ (source de vérité)
     const listResponse = await fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/contents/${POSTS_COMPLETS_PATH}`,
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${EDITORIAUX_PATH}`,
       {
         headers: {
           "Accept": "application/vnd.github.v3+json",
@@ -61,7 +88,7 @@ export const handler: Handler = async (event) => {
     const files: GitHubFile[] = await listResponse.json();
     const mdFiles = files.filter(f => f.type === "file" && f.name.endsWith(".md"));
 
-    // 2. Récupérer le contenu de chaque fichier pour extraire le titre du frontmatter
+    // 2. Pour chaque éditorial, chercher le titre dans posts-complets/ (frontmatter)
     const editoriaux: Editorial[] = [];
 
     await Promise.all(
@@ -69,28 +96,34 @@ export const handler: Handler = async (event) => {
         const parsed = parseFilename(file.name);
         if (!parsed) return;
 
+        let title: string | null = null;
+
+        // Essayer de récupérer le titre depuis posts-complets/
         try {
-          // Fetch le contenu du fichier (juste les premiers bytes pour le frontmatter)
-          const contentResponse = await fetch(file.download_url, {
-            headers: { "User-Agent": "SaaSpaladin-Forge" },
-          });
+          const contentResponse = await fetch(
+            `https://raw.githubusercontent.com/${GITHUB_REPO}/main/${POSTS_COMPLETS_PATH}/${file.name}`,
+            { headers: { "User-Agent": "SaaSpaladin-Forge" } }
+          );
 
           if (contentResponse.ok) {
             const content = await contentResponse.text();
-            const title = extractTitleFromFrontmatter(content);
-
-            if (title) {
-              editoriaux.push({
-                filename: file.name,
-                date: parsed.date,
-                title: title,
-                slug: parsed.slug,
-              });
-            }
+            title = extractTitleFromFrontmatter(content);
           }
         } catch (err) {
-          console.error(`Error fetching ${file.name}:`, err);
+          console.error(`Error fetching title for ${file.name}:`, err);
         }
+
+        // Fallback: générer le titre depuis le slug
+        if (!title) {
+          title = slugToTitle(parsed.slug);
+        }
+
+        editoriaux.push({
+          filename: file.name,
+          date: parsed.date,
+          title: title,
+          slug: parsed.slug,
+        });
       })
     );
 
