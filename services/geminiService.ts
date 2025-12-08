@@ -48,6 +48,9 @@ export class GeminiService {
       return await response.json();
     } catch (error: any) {
       console.error("Erreur lors de l'analyse:", error);
+      if (error.message?.includes("is not valid JSON") || error.message?.includes("Unexpected token")) {
+        throw new Error("Navigateur non supporté. Essayez avec Chrome ou Firefox.");
+      }
       throw new Error(error.message || "Impossible d'analyser le texte");
     }
   }
@@ -81,6 +84,9 @@ export class GeminiService {
       return await response.json();
     } catch (error: any) {
       console.error("Erreur lors de la génération:", error);
+      if (error.message?.includes("is not valid JSON") || error.message?.includes("Unexpected token")) {
+        throw new Error("Navigateur non supporté. Essayez avec Chrome ou Firefox.");
+      }
       throw new Error(error.message || "Impossible de générer l'image");
     }
   }
