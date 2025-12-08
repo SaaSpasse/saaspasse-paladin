@@ -1,12 +1,13 @@
 import type { Handler } from "@netlify/functions";
 
 const GITHUB_REPO = "SaaSpasse/saaspasse-editoriaux";
-const EDITORIAUX_PATH = "editoriaux";
+const POSTS_COMPLETS_PATH = "posts-complets";
 
 interface GitHubFile {
   name: string;
   path: string;
   type: string;
+  download_url: string;
 }
 
 interface Editorial {
@@ -16,56 +17,22 @@ interface Editorial {
   slug: string;
 }
 
-// Convertit un slug en titre lisible (Sentence case avec apostrophes françaises)
-// Supporte les caractères accentués (é, è, ê, à, ù, û, ô, î, ï, ç, etc.)
-function slugToTitle(slug: string): string {
-  // Articles élidés français qui doivent être suivis d'une apostrophe
-  const elidedArticles = ['l', 'd', 'n', 'c', 'j', 'm', 't', 's', 'qu'];
+// Extrait le titre du frontmatter YAML d'un fichier markdown
+function extractTitleFromFrontmatter(content: string): string | null {
+  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!frontmatterMatch) return null;
 
-  const words = slug.split("-");
-  const result: string[] = [];
-
-  for (let i = 0; i < words.length; i++) {
-    const word = words[i];
-    const nextWord = words[i + 1];
-
-    // Si c'est un article élidé suivi d'un autre mot, on fusionne avec apostrophe
-    if (nextWord && elidedArticles.includes(word.toLowerCase())) {
-      // Capitalize le premier mot de la phrase, sinon minuscule
-      const prefix = result.length === 0
-        ? capitalizeFirst(word)
-        : word.toLowerCase();
-      result.push(prefix + "'" + nextWord.toLowerCase());
-      i++; // Skip le mot suivant car il est fusionné
-    } else {
-      // Sentence case: majuscule seulement au premier mot
-      if (result.length === 0) {
-        result.push(capitalizeFirst(word));
-      } else {
-        result.push(word.toLowerCase());
-      }
-    }
-  }
-
-  return result.join(" ");
+  const frontmatter = frontmatterMatch[1];
+  // Cherche title: "..." ou title: '...' ou title: ...
+  const titleMatch = frontmatter.match(/^title:\s*["']?(.+?)["']?\s*$/m);
+  return titleMatch ? titleMatch[1] : null;
 }
 
-// Capitalize la première lettre d'un mot (supporte les caractères accentués)
-function capitalizeFirst(word: string): string {
-  if (!word) return word;
-  // Utilise toLocaleUpperCase pour gérer correctement les accents (é → É, etc.)
-  return word.charAt(0).toLocaleUpperCase('fr-FR') + word.slice(1).toLowerCase();
-}
-
-function parseFilename(filename: string): Editorial | null {
-  // Format: YYYY-MM-DD-titre-slug.md
+// Parse le nom de fichier pour extraire date et slug
+function parseFilename(filename: string): { date: string; slug: string } | null {
   const match = filename.match(/^(\d{4}-\d{2}-\d{2})-(.+)\.md$/);
   if (!match) return null;
-
-  const [, date, slug] = match;
-  const title = slugToTitle(slug);
-
-  return { filename, date, title, slug };
+  return { date: match[1], slug: match[2] };
 }
 
 export const handler: Handler = async (event) => {
@@ -74,8 +41,9 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    const response = await fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/contents/${EDITORIAUX_PATH}`,
+    // 1. Récupérer la liste des fichiers dans posts-complets/
+    const listResponse = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${POSTS_COMPLETS_PATH}`,
       {
         headers: {
           "Accept": "application/vnd.github.v3+json",
@@ -84,19 +52,50 @@ export const handler: Handler = async (event) => {
       }
     );
 
-    if (!response.ok) {
-      const error = await response.text();
+    if (!listResponse.ok) {
+      const error = await listResponse.text();
       console.error("GitHub API error:", error);
-      return { statusCode: response.status, body: JSON.stringify({ error: "GitHub API error" }) };
+      return { statusCode: listResponse.status, body: JSON.stringify({ error: "GitHub API error" }) };
     }
 
-    const files: GitHubFile[] = await response.json();
+    const files: GitHubFile[] = await listResponse.json();
+    const mdFiles = files.filter(f => f.type === "file" && f.name.endsWith(".md"));
 
-    const editoriaux = files
-      .filter(f => f.type === "file" && f.name.endsWith(".md"))
-      .map(f => parseFilename(f.name))
-      .filter((e): e is Editorial => e !== null)
-      .sort((a, b) => b.date.localeCompare(a.date)); // Most recent first
+    // 2. Récupérer le contenu de chaque fichier pour extraire le titre du frontmatter
+    const editoriaux: Editorial[] = [];
+
+    await Promise.all(
+      mdFiles.map(async (file) => {
+        const parsed = parseFilename(file.name);
+        if (!parsed) return;
+
+        try {
+          // Fetch le contenu du fichier (juste les premiers bytes pour le frontmatter)
+          const contentResponse = await fetch(file.download_url, {
+            headers: { "User-Agent": "SaaSpaladin-Forge" },
+          });
+
+          if (contentResponse.ok) {
+            const content = await contentResponse.text();
+            const title = extractTitleFromFrontmatter(content);
+
+            if (title) {
+              editoriaux.push({
+                filename: file.name,
+                date: parsed.date,
+                title: title,
+                slug: parsed.slug,
+              });
+            }
+          }
+        } catch (err) {
+          console.error(`Error fetching ${file.name}:`, err);
+        }
+      })
+    );
+
+    // Trier par date décroissante
+    editoriaux.sort((a, b) => b.date.localeCompare(a.date));
 
     return {
       statusCode: 200,
