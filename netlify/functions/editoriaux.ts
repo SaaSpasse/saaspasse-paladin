@@ -17,6 +17,7 @@ interface Editorial {
 }
 
 // Convertit un slug en titre lisible (Sentence case avec apostrophes françaises)
+// Supporte les caractères accentués (é, è, ê, à, ù, û, ô, î, ï, ç, etc.)
 function slugToTitle(slug: string): string {
   // Articles élidés français qui doivent être suivis d'une apostrophe
   const elidedArticles = ['l', 'd', 'n', 'c', 'j', 'm', 't', 's', 'qu'];
@@ -32,14 +33,14 @@ function slugToTitle(slug: string): string {
     if (nextWord && elidedArticles.includes(word.toLowerCase())) {
       // Capitalize le premier mot de la phrase, sinon minuscule
       const prefix = result.length === 0
-        ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        ? capitalizeFirst(word)
         : word.toLowerCase();
       result.push(prefix + "'" + nextWord.toLowerCase());
       i++; // Skip le mot suivant car il est fusionné
     } else {
       // Sentence case: majuscule seulement au premier mot
       if (result.length === 0) {
-        result.push(word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+        result.push(capitalizeFirst(word));
       } else {
         result.push(word.toLowerCase());
       }
@@ -47,6 +48,13 @@ function slugToTitle(slug: string): string {
   }
 
   return result.join(" ");
+}
+
+// Capitalize la première lettre d'un mot (supporte les caractères accentués)
+function capitalizeFirst(word: string): string {
+  if (!word) return word;
+  // Utilise toLocaleUpperCase pour gérer correctement les accents (é → É, etc.)
+  return word.charAt(0).toLocaleUpperCase('fr-FR') + word.slice(1).toLowerCase();
 }
 
 function parseFilename(filename: string): Editorial | null {
