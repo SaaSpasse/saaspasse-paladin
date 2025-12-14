@@ -40,11 +40,16 @@ export const handler: Handler = async (event) => {
 
     const content = await response.text();
 
+    // Ne pas cacher si le contenu est vide (fichier corrompu/incomplet)
+    const cacheControl = content.trim().length > 0
+      ? "public, max-age=3600" // Cache 1 hour si contenu valide
+      : "no-cache, no-store";  // Pas de cache si vide
+
     return {
       statusCode: 200,
       headers: {
         "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=3600", // Cache 1 hour
+        "Cache-Control": cacheControl,
       },
       body: JSON.stringify({ content }),
     };
