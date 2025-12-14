@@ -73,7 +73,9 @@ export const StepInput: React.FC<StepInputProps> = ({
     setSearchQuery(editorial.title);
 
     try {
-      const response = await fetch(`/.netlify/functions/editorial-content?filename=${encodeURIComponent(editorial.filename)}`);
+      // Ajouter cache-buster pour éviter les réponses vides cachées
+      const cacheBust = Date.now();
+      const response = await fetch(`/.netlify/functions/editorial-content?filename=${encodeURIComponent(editorial.filename)}&_t=${cacheBust}`);
       if (response.ok) {
         const data = await response.json();
         setNewsletterText(data.content);
