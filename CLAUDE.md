@@ -94,3 +94,54 @@ git push        # Déclenche auto-deploy sur Netlify
 - Le dropdown s'ouvre au focus/clic (pas besoin de taper)
 - L'image de référence du SaaSpaladin est intégrée en base64 dans `ref-image.ts`
 - Les éditoriaux sont fetchés depuis le repo GitHub SaaSpasse/saaspasse-editoriaux
+
+---
+
+## Troubleshooting & Leçons apprises
+
+### Le texte de l'éditorial ne se charge pas dans la zone de texte
+
+**Symptôme:** On sélectionne un éditorial dans le dropdown, le titre s'affiche, mais la zone de texte reste vide et le bouton "Extraire l'essence visuelle" reste désactivé.
+
+**Diagnostic:**
+1. Ouvrir les DevTools (F12) > Network
+2. Chercher la requête `editorial-content?filename=...`
+3. Vérifier la réponse: si `{"content":""}`, le fichier est vide sur GitHub
+
+**Causes possibles:**
+
+1. **Fichier vide sur GitHub** - Le script de conversion dans `posts-infolettre` n'a pas extrait le contenu (voir troubleshooting dans ce repo)
+
+2. **Cache Netlify avec réponse vide** - Une ancienne requête avec contenu vide a été cachée
+
+**Solutions implémentées (2024-12):**
+- `StepInput.tsx`: Cache-buster ajouté (`&_t=timestamp`) pour forcer le refresh
+- `editorial-content.ts`: Ne cache plus les réponses vides (`no-cache, no-store`)
+
+### Vérifier le contenu d'un éditorial via l'API
+
+```bash
+# Directement via GitHub (source de vérité)
+gh api repos/SaaSpasse/saaspasse-editoriaux/contents/editoriaux/<fichier>.md --jq '.size'
+
+# Via la fonction Netlify (avec cache-buster)
+curl "https://paladin.saaspasse.com/.netlify/functions/editorial-content?filename=<fichier>.md&_t=$(date +%s)"
+```
+
+### L'éditorial existe sur GitHub mais pas dans le dropdown
+
+**Cause:** La fonction `editoriaux.ts` liste les fichiers depuis GitHub. Le cache est de 5 minutes.
+
+**Solution:** Attendre 5 minutes ou ajouter un cache-buster similaire à `editorial-content`.
+
+### Architecture du système de cache
+
+```
+GitHub (source)
+    ↓
+editorial-content.ts (Cache-Control: 1h si contenu valide, no-cache si vide)
+    ↓
+StepInput.tsx (cache-buster &_t=timestamp)
+    ↓
+UI
+```
