@@ -1,8 +1,9 @@
 import type { Handler } from "@netlify/functions";
+import { privateJson } from "../lib/editorial-access";
 
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+    return privateJson(405, { error: "Method Not Allowed" });
   }
 
   try {
@@ -10,28 +11,15 @@ export const handler: Handler = async (event) => {
     const expectedPassword = process.env.PALADIN_SECRET;
 
     if (!expectedPassword) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: "Configuration error" })
-      };
+      return privateJson(503, { error: "Configuration error" });
     }
 
     if (password !== expectedPassword) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ valid: false, error: "Mot de passe invalide" })
-      };
+      return privateJson(401, { valid: false, error: "Mot de passe invalide" });
     }
 
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ valid: true }),
-    };
+    return privateJson(200, { valid: true });
   } catch (error: any) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: "Invalid request" })
-    };
+    return privateJson(400, { error: "Invalid request" });
   }
 };

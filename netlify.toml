@@ -5,3 +5,9 @@
 
 [functions]
   node_bundler = "esbuild"
+
+[functions."editoriaux"]
+  included_files = [".netlify/private-editorials.json"]
+
+[functions."editorial-content"]
+  included_files = [".netlify/private-editorials.json"]

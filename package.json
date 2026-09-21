@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run prepare:editorials && vite build && node scripts/verify-editorial-deployment.mjs",
+    "prepare:editorials": "node scripts/prepare-editorials.mjs",
+    "test:editorial-source": "node --test tests/editorial-source.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

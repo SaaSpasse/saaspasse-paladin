@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Layout } from './components/Layout';
 import { StepInput } from './components/StepInput';
 import { StepReview } from './components/StepReview';
@@ -20,14 +20,13 @@ const PasswordScreen: React.FC<{ onSubmit: (password: string) => void; error?: s
     setValidationError(undefined);
 
     try {
-      // Utilise la fonction analyze avec un texte minimal pour valider le password
-      const response = await fetch('/.netlify/functions/analyze', {
+      const response = await fetch('/.netlify/functions/validate-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-paladin-secret': password.trim(),
         },
-        body: JSON.stringify({ text: 'test' }),
+        body: JSON.stringify({ password: password.trim() }),
+        cache: 'no-store',
       });
 
       if (response.status === 401) {
@@ -35,7 +34,16 @@ const PasswordScreen: React.FC<{ onSubmit: (password: string) => void; error?: s
         return;
       }
 
-      // Password valide (même si analyze retourne une autre erreur, le password est bon)
+      if (!response.ok) {
+        setValidationError('Vérification indisponible. Réessayez.');
+        return;
+      }
+      const result = await response.json();
+      if (result.valid !== true) {
+        setValidationError('Vérification indisponible. Réessayez.');
+        return;
+      }
+
       onSubmit(password.trim());
     } catch (err) {
       setValidationError('Erreur de connexion. Réessayez.');
@@ -89,7 +97,7 @@ const PasswordScreen: React.FC<{ onSubmit: (password: string) => void; error?: s
 };
 
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(hasSecret());
+  const [isAuthenticated, setIsAuthenticated] = useState(hasSecret);
   const [authError, setAuthError] = useState<string | undefined>();
   const [state, setState] = useState<GenerationState>({ step: 'idle' });
 
@@ -107,11 +115,11 @@ const App: React.FC = () => {
     setAuthError(undefined);
   };
 
-  const handleAuthError = () => {
+  const handleAuthError = useCallback(() => {
     clearSecret();
     setIsAuthenticated(false);
     setAuthError("Mot de passe invalide");
-  };
+  }, []);
 
   const handleAnalyze = useCallback(async () => {
     const service = new GeminiService();
@@ -130,7 +138,7 @@ const App: React.FC = () => {
         setState({ step: 'error', error: e.message || "Erreur d'analyse inconnue" });
       }
     }
-  }, [newsletterText]);
+  }, [newsletterText, handleAuthError]);
 
   const handleGenerateImage = useCallback(async () => {
     const service = new GeminiService();
@@ -153,7 +161,7 @@ const App: React.FC = () => {
         setState({ step: 'error', error: e.message || "Erreur de génération d'image" });
       }
     }
-  }, [scenePrompt, state.step, generatedImageUrl]);
+  }, [scenePrompt, state.step, generatedImageUrl, handleAuthError]);
 
   const handleReset = () => {
     setState({ step: 'idle' });
@@ -231,6 +239,7 @@ const App: React.FC = () => {
             newsletterText={newsletterText}
             setNewsletterText={setNewsletterText}
             onNext={handleAnalyze}
+            onAuthError={handleAuthError}
             isLoading={state.step === 'analyzing'}
           />
         );

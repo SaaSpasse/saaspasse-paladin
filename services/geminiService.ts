@@ -1,6 +1,6 @@
 import { AnalysisResult } from "../types";
 
-const getSecret = (): string | null => {
+export const getSecret = (): string | null => {
   return localStorage.getItem("paladin_secret");
 };
 

@@ -1,5 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
+import { getSecret } from '../services/geminiService';
 
 interface Editorial {
   filename: string;
@@ -12,6 +13,7 @@ interface StepInputProps {
   newsletterText: string;
   setNewsletterText: (text: string) => void;
   onNext: () => void;
+  onAuthError: () => void;
   isLoading: boolean;
 }
 
@@ -20,6 +22,7 @@ export const StepInput: React.FC<StepInputProps> = ({
   newsletterText,
   setNewsletterText,
   onNext,
+  onAuthError,
   isLoading,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,21 +46,32 @@ export const StepInput: React.FC<StepInputProps> = ({
 
   // Fetch editoriaux on mount
   useEffect(() => {
+    const controller = new AbortController();
     const fetchEditoriaux = async () => {
       try {
-        const response = await fetch('/.netlify/functions/editoriaux');
+        const response = await fetch('/.netlify/functions/editoriaux', {
+          headers: { 'X-Paladin-Secret': getSecret() || '' },
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted) return;
+        if (response.status === 401) {
+          onAuthError();
+          return;
+        }
         if (response.ok) {
           const data = await response.json();
-          setEditoriaux(data);
+          if (!controller.signal.aborted) setEditoriaux(data);
         }
       } catch (error) {
-        console.error('Error fetching editoriaux:', error);
+        if (!controller.signal.aborted) console.error('Error fetching editoriaux:', error);
       } finally {
-        setIsLoadingEditoriaux(false);
+        if (!controller.signal.aborted) setIsLoadingEditoriaux(false);
       }
     };
     fetchEditoriaux();
-  }, []);
+    return () => controller.abort();
+  }, [onAuthError]);
 
   // Filter editoriaux based on search (show all if empty query)
   const filteredEditoriaux = searchQuery.trim()
@@ -73,9 +87,14 @@ export const StepInput: React.FC<StepInputProps> = ({
     setSearchQuery(editorial.title);
 
     try {
-      // Ajouter cache-buster pour éviter les réponses vides cachées
-      const cacheBust = Date.now();
-      const response = await fetch(`/.netlify/functions/editorial-content?filename=${encodeURIComponent(editorial.filename)}&_t=${cacheBust}`);
+      const response = await fetch(`/.netlify/functions/editorial-content?filename=${encodeURIComponent(editorial.filename)}`, {
+        headers: { 'X-Paladin-Secret': getSecret() || '' },
+        cache: 'no-store',
+      });
+      if (response.status === 401) {
+        onAuthError();
+        return;
+      }
       if (response.ok) {
         const data = await response.json();
         setNewsletterText(data.content);
