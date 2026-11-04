@@ -52,10 +52,10 @@ export const handler: Handler = async (event) => {
       --no ${NEGATIVE_PROMPT}
     `.trim();
 
-    // Stratégie de Fallback : Essayer Pro, si échec, essayer Flash
+    // Essayer le modèle Pro stable, puis le modèle image rapide.
     const models = [
-      { name: "gemini-3-pro-image-preview", label: "Gemini 3 Pro (Haute Qualité)" },
-      { name: "gemini-2.5-flash-preview-05-20", label: "Gemini 2.5 Flash (Mode Rapide)" },
+      { name: "gemini-3-pro-image", label: "Gemini 3 Pro (Haute Qualité)" },
+      { name: "gemini-nano-banana-2.1", label: "Nano Banana 2.1 (Mode Rapide)" },
     ];
 
     let lastError = null;
@@ -65,10 +65,10 @@ export const handler: Handler = async (event) => {
         console.log(`Trying model: ${model.name}`);
 
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model.name}:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${model.name}:generateContent`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
             body: JSON.stringify({
               contents: [{
                 parts: [
@@ -78,7 +78,8 @@ export const handler: Handler = async (event) => {
                 ]
               }],
               generationConfig: {
-                responseModalities: ["image", "text"],
+                responseModalities: ["TEXT", "IMAGE"],
+                imageConfig: { aspectRatio: "16:9" },
               },
             }),
           }
@@ -96,7 +97,7 @@ export const handler: Handler = async (event) => {
         // Extract image from response
         const parts = data.candidates?.[0]?.content?.parts || [];
         for (const part of parts) {
-          if (part.inlineData) {
+          if (!part.thought && part.inlineData?.data) {
             return {
               statusCode: 200,
               headers: { "Content-Type": "application/json" },

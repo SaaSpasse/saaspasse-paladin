@@ -49,10 +49,10 @@ export const handler: Handler = async (event) => {
     }
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION_ANALYSIS }] },
           contents: [{ parts: [{ text: `Voici le contenu de la newsletter :\n\n${text}` }] }],
@@ -79,7 +79,10 @@ export const handler: Handler = async (event) => {
     }
 
     const data = await response.json();
-    const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const resultText = (data.candidates?.[0]?.content?.parts || [])
+      .filter((part: { thought?: boolean; text?: string }) => !part.thought && typeof part.text === "string")
+      .map((part: { text: string }) => part.text)
+      .join("");
 
     if (!resultText) {
       return { statusCode: 500, body: JSON.stringify({ error: "Empty response from Gemini" }) };
